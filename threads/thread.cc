@@ -33,18 +33,41 @@ const int STACK_FENCEPOST = 0xdedbeef;
 //	"threadName" is an arbitrary string, useful for debugging.
 //----------------------------------------------------------------------
 
-Thread::Thread(char* threadName)
+int Thread::Utable[UsersLimit];    // This user table helps the constructor to get the number of active threads..
+int Thread::Ttable[UsersLimit][MaxPID];    // This table records the allocation of thread IDs.
+
+
+Thread::Thread(char* threadName, int uid=0)
 {
+    UID = uid;
     name = threadName;
-    stackTop = NULL;
-    stack = NULL;
-    status = JUST_CREATED;
-    for (int i = 0; i < MachineStateSize; i++) {
-	machineState[i] = NULL;		// not strictly necessary, since
+    if (uid > -1 && uid < UsersLimit && Utable[uid] < MaxPID)
+    {
+        Utable[uid]++;
+        for(int i = 0; i < MaxPID; i++)
+        {
+            if (Ttable[UID][i] == 0)
+            {
+                TID = i;
+                Ttable[UID][i] = 1;
+                break;
+            }         
+        }    
+        stackTop = NULL;
+        stack = NULL;
+        status = JUST_CREATED;
+        for (int i = 0; i < MachineStateSize; i++) {
+	    machineState[i] = NULL;		// not strictly necessary, since
 					// new thread ignores contents 
 					// of machine registers
+        }
+        space = NULL;
     }
-    space = NULL;
+    else
+    {
+        TID = -1;
+        cout << "The number of threads reaches to the upper limits." << endl;
+    }
 }
 
 //----------------------------------------------------------------------
@@ -66,6 +89,10 @@ Thread::~Thread()
     ASSERT(this != kernel->currentThread);
     if (stack != NULL)
 	DeallocBoundedArray((char *) stack, StackSize * sizeof(int));
+    if (TID != -1) {
+        Ttable[UID][TID] = 0;
+        Utable[UID]--;
+    }
 }
 
 //----------------------------------------------------------------------
@@ -411,7 +438,7 @@ SimpleThread(int which)
     int num;
     
     for (num = 0; num < 5; num++) {
-	cout << "*** thread " << which << " looped " << num << " times\n";
+	    cout << "*** thread " << which << " user ID: "<< kernel->currentThread->getUID() << " thread ID: " << kernel->currentThread->getTID() << " looped " << num << " times\n";
         kernel->currentThread->Yield();
     }
 }
@@ -426,11 +453,36 @@ void
 Thread::SelfTest()
 {
     DEBUG(dbgThread, "Entering Thread::SelfTest");
-
-    Thread *t = new Thread("forked thread");
-
-    t->Fork((VoidFunctionPtr) SimpleThread, (void *) 1);
-    kernel->currentThread->Yield();
-    SimpleThread(0);
+    for(int index = 0; index < 256; index++)
+    {
+        Thread *t = new Thread("forked thread");
+        if (t->getTID() != -1) {
+            t->Fork((VoidFunctionPtr) SimpleThread, (void *) index);
+        if (index > 126)           
+            kernel->currentThread->Yield();
+        }
+    }
+    //SimpleThread(0);
 }
 
+//----------------------------------------------------------------------
+// Thread::getUID
+// Get user ID of the thread.
+//----------------------------------------------------------------------
+
+int
+Thread::getUID()
+{
+    return UID;
+}
+
+//----------------------------------------------------------------------
+// Thread::getTID
+// Get thread ID of the thread.
+//----------------------------------------------------------------------
+
+int
+Thread::getTID()
+{
+    return TID;
+}
