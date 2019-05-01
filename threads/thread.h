@@ -53,6 +53,11 @@
 
 #define MachineStateSize 75 
 
+// Define the PID limit value.
+#define MaxPID 128
+
+// Define the max user limit.
+#define UsersLimit 8
 
 // Size of the thread's private execution stack.
 // WATCH OUT IF THIS ISN'T BIG ENOUGH!!!!!
@@ -82,7 +87,7 @@ class Thread {
     void *machineState[MachineStateSize];  // all registers except for stackTop
 
   public:
-    Thread(char* debugName);		// initialize a Thread 
+    Thread(char* debugName, int uid=0);		// initialize a Thread 
     ~Thread(); 				// deallocate a Thread
 					// NOTE -- thread being deleted
 					// must not be running when delete 
@@ -104,6 +109,8 @@ class Thread {
     char* getName() { return (name); }
     void Print() { cout << name; }
     void SelfTest();		// test whether thread impl is working
+    int getUID();    // Get user ID of the thread.
+    int getTID();    // Get thread ID of the thread.
 
   private:
     // some of the private data for this class is listed above
@@ -113,6 +120,12 @@ class Thread {
 				// (If NULL, don't deallocate stack)
     ThreadStatus status;	// ready, running or blocked
     char* name;
+
+    int UID; // User ID
+    int TID; // Thread ID
+
+    static int Utable[UsersLimit];    // This user table helps the constructor to get the number of active threads..
+    static int Ttable[UsersLimit][MaxPID];    // This table records the allocation of thread IDs.
 
     void StackAllocate(VoidFunctionPtr func, void *arg);
     				// Allocate a stack for thread.
