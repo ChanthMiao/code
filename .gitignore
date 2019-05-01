@@ -1,0 +1,5 @@
+*.o
+build.*/nachos
+*noff
+.vscode
+DISK_0
