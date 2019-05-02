@@ -39,6 +39,9 @@ class Scheduler {
 				// but not running
     Thread *toBeDestroyed;	// finishing thread to be destroyed
     				// by the next thread that runs
+
+  public:
+    int NumInReadyList() { return readyList->NumInList(); }; // check how many threads is in readylist.
 };
 
 #endif // SCHEDULER_H
