@@ -445,15 +445,15 @@ SimpleThread(int which)
 
 //----------------------------------------------------------------------
 // Thread::SelfTest
-// 	Set up a ping-pong between two threads, by forking a thread 
-//	to call SimpleThread, and then calling SimpleThread ourselves.
+// 	Disable the interrupt at first and postpone the execution of Yield() 
+//	to make it possible to execute concurence limit test.
 //----------------------------------------------------------------------
 
 void
 Thread::SelfTest()
 {
     DEBUG(dbgThread, "Entering Thread::SelfTest");
-    IntStatus oldLevel = kernel->interrupt->SetLevel(IntOff);
+    (void) kernel->interrupt->SetLevel(IntOff);
     for(int index = 0; index < 136; index++)
     {
         Thread *t = new Thread("forked thread");
@@ -463,10 +463,8 @@ Thread::SelfTest()
             kernel->currentThread->Yield();
     }
     while(kernel->scheduler->NumInReadyList() > 1){
-        kernel->currentThread->Yield();
+        kernel->currentThread->Yield(); // Make sure that all "forked thread"s could complete the SimpleThread(index) test.
     }
-    (void) kernel->interrupt->SetLevel(oldLevel);
-    //SimpleThread(0);
 }
 
 //----------------------------------------------------------------------
