@@ -41,6 +41,7 @@ Thread::Thread(char* threadName, int uid)
 {
     UID = uid;
     name = threadName;
+    IntStatus preLevel = kernel->interrupt->SetLevel(IntOff);
     if (uid > -1 && uid < UsersLimit && Utable[uid] < MaxPID)
     {
         Utable[uid]++;
@@ -68,6 +69,7 @@ Thread::Thread(char* threadName, int uid)
         TID = -1;
         cout << "The number of threads reaches to the upper limits." << endl;
     }
+    (void) kernel->interrupt->SetLevel(preLevel);
 }
 
 //----------------------------------------------------------------------
