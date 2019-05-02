@@ -37,7 +37,7 @@ int Thread::Utable[UsersLimit];    // This user table helps the constructor to g
 int Thread::Ttable[UsersLimit][MaxPID];    // This table records the allocation of thread IDs.
 
 
-Thread::Thread(char* threadName, int uid=0)
+Thread::Thread(char* threadName, int uid)
 {
     UID = uid;
     name = threadName;
@@ -453,15 +453,19 @@ void
 Thread::SelfTest()
 {
     DEBUG(dbgThread, "Entering Thread::SelfTest");
-    for(int index = 0; index < 256; index++)
+    IntStatus oldLevel = kernel->interrupt->SetLevel(IntOff);
+    for(int index = 0; index < 136; index++)
     {
         Thread *t = new Thread("forked thread");
-        if (t->getTID() != -1) {
+        if (t->getTID() != -1)
             t->Fork((VoidFunctionPtr) SimpleThread, (void *) index);
-        if (index > 126)           
+        if (index > MaxPID - 7)
             kernel->currentThread->Yield();
-        }
     }
+    while(kernel->scheduler->NumInReadyList() > 1){
+        kernel->currentThread->Yield();
+    }
+    (void) kernel->interrupt->SetLevel(oldLevel);
     //SimpleThread(0);
 }
 
