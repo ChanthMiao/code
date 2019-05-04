@@ -49,7 +49,7 @@ Thread::Thread(char* threadName, int uid)
         {
             if (Ttable[TID] == 0)
             {
-                Ttable[TID] = uid + 1;
+                Ttable[TID] = 1;
                 break;
             }         
         }    
