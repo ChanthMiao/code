@@ -34,7 +34,7 @@ const int STACK_FENCEPOST = 0xdedbeef;
 //----------------------------------------------------------------------
 
 int Thread::Utable[UsersLimit];    // This user table helps the constructor to get the number of active threads..
-int Thread::Ttable[UsersLimit][MaxPID];    // This table records the allocation of thread IDs.
+int Thread::Ttable[UsersLimit * MaxPID];    // This table records the allocation of thread IDs.
 
 
 Thread::Thread(char* threadName, int uid)
@@ -44,12 +44,12 @@ Thread::Thread(char* threadName, int uid)
     if (uid > -1 && uid < UsersLimit && Utable[uid] < MaxPID)
     {
         Utable[uid]++;
-        for(int i = 0; i < MaxPID; i++)
+        TID = uid * MaxPID;
+        for(int i = 0; i < MaxPID; i++, TID++)
         {
-            if (Ttable[UID][i] == 0)
+            if (Ttable[TID] == 0)
             {
-                TID = i;
-                Ttable[UID][i] = 1;
+                Ttable[TID] = uid + 1;
                 break;
             }         
         }    
@@ -90,7 +90,7 @@ Thread::~Thread()
     if (stack != NULL)
 	DeallocBoundedArray((char *) stack, StackSize * sizeof(int));
     if (TID != -1) {
-        Ttable[UID][TID] = 0;
+        Ttable[TID] = 0;
         Utable[UID]--;
     }
 }

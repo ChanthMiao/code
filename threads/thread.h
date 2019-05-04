@@ -125,7 +125,7 @@ class Thread {
     int TID; // Thread ID
 
     static int Utable[UsersLimit];    // This user table helps the constructor to get the number of active threads..
-    static int Ttable[UsersLimit][MaxPID];    // This table records the allocation of thread IDs.
+    static int Ttable[UsersLimit * MaxPID];    // This table records the allocation of thread IDs.
 
     void StackAllocate(VoidFunctionPtr func, void *arg);
     				// Allocate a stack for thread.
