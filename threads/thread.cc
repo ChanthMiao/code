@@ -36,6 +36,10 @@ const int STACK_FENCEPOST = 0xdedbeef;
 int Thread::Utable[UsersLimit];    // This user table helps the constructor to get the number of active threads..
 int Thread::Ttable[UsersLimit * MaxPID];    // This table records the allocation of thread IDs.
 
+// Offer list, lock and condition var for customed thread test: P_C
+Lock *PClock = new Lock("PClock");
+Condition *PCcond = new Condition("PCcond");
+List<int> *repo = new List<int>();
 
 Thread::Thread(char* threadName, int uid)
 {
@@ -444,26 +448,74 @@ SimpleThread(int which)
 }
 
 //----------------------------------------------------------------------
+// Thread::SimpleConsumer
+// 	Act as a consumer of the P_C test.
+//----------------------------------------------------------------------
+static void
+SimpleConsumer(int id)
+{
+    for (int i = 0; i < 10; i++)
+    {
+        PClock->Acquire();
+        while (repo->IsEmpty())
+        {
+            PCcond->Wait(PClock);
+        }
+        int which = repo->RemoveFront();
+        cout << "TID = " << kernel->currentThread->getTID() << ", consumer id = " << id << ", consumes an item, i = " << which << endl;
+        PCcond->Signal(PClock);
+        PClock->Release();
+    }
+}
+
+//----------------------------------------------------------------------
 // Thread::SelfTest
 // 	Disable the interrupt at first and postpone the execution of Yield() 
 //	to make it possible to execute concurence limit test.
 //----------------------------------------------------------------------
 
 void
-Thread::SelfTest()
+Thread::SelfTest(int kind)
 {
     DEBUG(dbgThread, "Entering Thread::SelfTest");
-    (void) kernel->interrupt->SetLevel(IntOff);
-    for(int index = 0; index < 136; index++)
+    switch (kind)
     {
-        Thread *t = new Thread("forked thread");
-        if (t->getTID() != -1)
-            t->Fork((VoidFunctionPtr) SimpleThread, (void *) index);
-        if (index > MaxPID - 7)
-            kernel->currentThread->Yield();
-    }
-    while(kernel->scheduler->NumInReadyList() > 1){
-        kernel->currentThread->Yield(); // Make sure that all "forked thread"s could complete the SimpleThread(index) test.
+        case 0:
+        {
+            (void) kernel->interrupt->SetLevel(IntOff);
+            for(int index = 0; index < 136; index++)
+            {
+                Thread *t = new Thread("forked thread");
+                if (t->getTID() != -1)
+                    t->Fork((VoidFunctionPtr) SimpleThread, (void *) index);
+                if (index > MaxPID - 7)
+                    kernel->currentThread->Yield();
+            }
+            while(kernel->scheduler->NumInReadyList() > 1){
+                kernel->currentThread->Yield(); // Make sure that all "forked thread"s could complete the SimpleThread(index) test.
+            }
+            break;
+        }
+        case 1:
+        {
+            Thread *consumer = new Thread("consumer");
+            consumer->Fork((VoidFunctionPtr)SimpleConsumer, (void *)955);
+            for (int i = 0; i < 10; i++)
+            {
+                PClock->Acquire();
+                while (!(repo->IsEmpty()))
+                {
+                    PCcond->Wait(PClock);
+                }
+                repo->Append(i);
+                cout << "TID = " << kernel->currentThread->getTID() << ", producer id = 996, produce an item, i = " << i << endl;
+                PCcond->Signal(PClock);
+                PClock->Release();
+            }
+            break;
+        }
+        default:
+            break;
     }
 }
 

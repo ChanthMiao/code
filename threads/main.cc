@@ -179,6 +179,7 @@ int
 main(int argc, char **argv)
 {
     int i;
+    int customedThreadTestInt = 0;
     char *debugArg = "";
     char *userProgName = NULL;        // default is not to execute a user prog
     bool threadTestFlag = false;
@@ -212,6 +213,13 @@ main(int argc, char **argv)
 	}
 	else if (strcmp(argv[i], "-K") == 0) {
 	    threadTestFlag = TRUE;
+        if (i + 1 < argc)
+        {
+            if (strcmp(argv[i + 1], "1") == 0)
+            {
+                customedThreadTestInt = 1;
+            }
+        }
 	}
 	else if (strcmp(argv[i], "-C") == 0) {
 	    consoleTestFlag = TRUE;
@@ -274,7 +282,7 @@ main(int argc, char **argv)
     // at this point, the kernel is ready to do something
     // run some tests, if requested
     if (threadTestFlag) {
-      kernel->ThreadSelfTest();  // test threads and synchronization
+      kernel->ThreadSelfTest(customedThreadTestInt);  // test threads and synchronization
     }
     if (consoleTestFlag) {
       kernel->ConsoleTest();   // interactive test of the synchronized console
