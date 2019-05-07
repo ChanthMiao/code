@@ -108,7 +108,7 @@ class Thread {
     void setStatus(ThreadStatus st) { status = st; }
     char* getName() { return (name); }
     void Print() { cout << name; }
-    void SelfTest();		// test whether thread impl is working
+    void SelfTest(int kind = 0);		// test whether thread impl is working
     int getUID();    // Get user ID of the thread.
     int getTID();    // Get thread ID of the thread.
 

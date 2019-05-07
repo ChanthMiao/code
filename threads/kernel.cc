@@ -140,13 +140,13 @@ Kernel::~Kernel()
 //----------------------------------------------------------------------
 
 void
-Kernel::ThreadSelfTest() {
+Kernel::ThreadSelfTest(int kind) {
    Semaphore *semaphore;
    SynchList<int> *synchList;
    
    LibSelfTest();		// test library routines
    
-   currentThread->SelfTest();	// test thread switching
+   currentThread->SelfTest(kind);	// test thread switching
    
    				// test semaphore operation
    semaphore = new Semaphore("test", 0);
