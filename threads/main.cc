@@ -218,6 +218,7 @@ main(int argc, char **argv)
             if (strcmp(argv[i + 1], "1") == 0)
             {
                 customedThreadTestInt = 1;
+                i++;
             }
         }
 	}
