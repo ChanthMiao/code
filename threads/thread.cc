@@ -37,9 +37,9 @@ int Thread::Utable[UsersLimit];    // This user table helps the constructor to g
 int Thread::Ttable[UsersLimit * MaxPID];    // This table records the allocation of thread IDs.
 
 // Offer list, lock and condition var for customed thread test: P_C
-Lock *PClock = new Lock("PClock");
-Condition *PCcond = new Condition("PCcond");
-List<int> *repo = new List<int>();
+static Lock *PClock = NULL;
+static Condition *PCcond = NULL;
+static List<int> *repo = NULL;
 
 Thread::Thread(char* threadName, int uid)
 {
@@ -449,7 +449,7 @@ SimpleThread(int which)
 
 //----------------------------------------------------------------------
 // Thread::SimpleConsumer
-// 	Act as a consumer of the P_C test.
+// 	Act as a producer of the P_C test.
 //----------------------------------------------------------------------
 static void
 SimpleConsumer(int id)
@@ -469,6 +469,27 @@ SimpleConsumer(int id)
 }
 
 //----------------------------------------------------------------------
+// Thread::SimpleProducer
+// 	Act as a consumer of the P_C test.
+//----------------------------------------------------------------------
+static void
+SimpleProducer(int id)
+{
+    for (int i = 0; i < 10; i++)
+    {
+        PClock->Acquire();
+        while (!(repo->IsEmpty()))
+        {
+            PCcond->Wait(PClock);
+        }
+        repo->Append(i);
+        cout << "TID = " << kernel->currentThread->getTID() << ", producer id = " << id << ", produce an item, i = " << i << endl;
+        PCcond->Signal(PClock);
+        PClock->Release();
+    }
+}
+
+//----------------------------------------------------------------------
 // Thread::SelfTest
 // 	Disable the interrupt at first and postpone the execution of Yield() 
 //	to make it possible to execute concurence limit test.
@@ -478,6 +499,12 @@ void
 Thread::SelfTest(int kind)
 {
     DEBUG(dbgThread, "Entering Thread::SelfTest");
+    ASSERT(PClock == NULL);
+    PClock = new Lock("PClock");
+    ASSERT(PCcond == NULL);
+    PCcond = new Condition("PCcond");
+    ASSERT(repo == NULL);
+    repo = new List<int>();
     switch (kind)
     {
         case 0:
@@ -498,25 +525,28 @@ Thread::SelfTest(int kind)
         }
         case 1:
         {
+            // Create a new thread as "consumer".
             Thread *consumer = new Thread("consumer");
+            Thread *producer = new Thread("producer");
+            int p_tid = producer->getTID();
+            int c_tid = consumer->getTID();
+            producer->Fork((VoidFunctionPtr)SimpleProducer, (void *)996);
             consumer->Fork((VoidFunctionPtr)SimpleConsumer, (void *)955);
-            for (int i = 0; i < 10; i++)
-            {
-                PClock->Acquire();
-                while (!(repo->IsEmpty()))
-                {
-                    PCcond->Wait(PClock);
-                }
-                repo->Append(i);
-                cout << "TID = " << kernel->currentThread->getTID() << ", producer id = 996, produce an item, i = " << i << endl;
-                PCcond->Signal(PClock);
-                PClock->Release();
+            while(Ttable[p_tid] || Ttable[c_tid]){
+                kernel->currentThread->Yield(); // Make sure that all "forked thread"s could complete the SimpleThread(index) test.
             }
             break;
         }
         default:
             break;
     }
+    // clean test only vars.
+    delete PClock;
+    delete PCcond;
+    delete repo;
+    PClock = NULL;
+    PCcond = NULL;
+    repo = NULL;
 }
 
 //----------------------------------------------------------------------
