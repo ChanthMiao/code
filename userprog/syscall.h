@@ -41,8 +41,10 @@
 #define SC_Clock        20
 
 #define SC_Add		42
-#define SC_Sub		43
+#define SC_Div		43
 #define SC_Exp		44
+
+#define MAX_FILENAME 128
 
 #ifndef IN_ASM
 
@@ -66,7 +68,7 @@ void Halt();
 
 int Add(int op1, int op2);
 
-int Sub(int op1, int op2);
+int Div(int op1, int op2);
 
 int Exp(int op1, int op2);
 

@@ -53,7 +53,7 @@ Halt:
 	.globl Sub
 	.ent	Sub
 Sub:
-	addiu $2,$0,SC_Sub
+	addiu $2,$0,SC_Div
 	syscall
 	j	$31
 	.end Sub

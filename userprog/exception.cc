@@ -90,14 +90,14 @@ ExceptionHandler(ExceptionType which)
 										ASSERTNOTREACHED();
 										break;
 								}
-								case SC_Sub:
+								case SC_Div:
 								{
-										DEBUG(dbgSys, "Sub " << kernel->machine->ReadRegister(4) << " - " << kernel->machine->ReadRegister(5) << "\n");
+										DEBUG(dbgSys, "Div " << kernel->machine->ReadRegister(4) << " / " << kernel->machine->ReadRegister(5) << "\n");
 										/* Process SysAdd Systemcall*/
 										int result;
-										result = SysSub(/* int op1 */(int)kernel->machine->ReadRegister(4),
+										result = SysDiv(/* int op1 */(int)kernel->machine->ReadRegister(4),
 												/* int op2 */(int)kernel->machine->ReadRegister(5));
-										DEBUG(dbgSys, "Sub returning with " << result << "\n");
+										DEBUG(dbgSys, "Div returning with " << result << "\n");
 										/* Prepare Result */
 										kernel->machine->WriteRegister(2, (int)result);
 										/* Modify return point */
@@ -121,6 +121,245 @@ ExceptionHandler(ExceptionType which)
 										result = SysExp(/* int op1 */(int)kernel->machine->ReadRegister(4),
 												/* int op2 */(int)kernel->machine->ReadRegister(5));
 										DEBUG(dbgSys, "Exp returning with " << result << "\n");
+										/* Prepare Result */
+										kernel->machine->WriteRegister(2, (int)result);
+										/* Modify return point */
+										{
+										  /* set previous programm counter (debugging only)*/
+										  kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
+										  /* set programm counter to next instruction (all Instructions are 4 byte wide)*/
+										  kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(PCReg) + 4);
+										  /* set next programm counter for brach execution */
+										  kernel->machine->WriteRegister(NextPCReg, kernel->machine->ReadRegister(PCReg)+4);
+										}
+										return;
+										ASSERTNOTREACHED();
+										break;
+								}
+								case SC_Exec:
+								{
+										char targetName[MAX_FILENAME + 1];
+										int addr = kernel->machine->ReadRegister(4);
+										int tmp;
+										targetName[MAX_FILENAME] = '\0';
+										for (int i = 0; i < MAX_FILENAME; i++)
+										{
+												kernel->machine->ReadMem(addr + i, 1, &tmp);
+												targetName[i] = (char)tmp;
+												if (targetName[i] == '\0')
+												{
+													break;
+												}							
+										}
+										DEBUG(dbgSys, "Exec " << targetName << "\n");
+										int result = sysExec(targetName);
+										DEBUG(dbgSys, "Exec returning with " << result << "\n");
+										/* Prepare Result */
+										kernel->machine->WriteRegister(2, (int)result);
+										/* Modify return point */
+										{
+										  /* set previous programm counter (debugging only)*/
+										  kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
+										  /* set programm counter to next instruction (all Instructions are 4 byte wide)*/
+										  kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(PCReg) + 4);
+										  /* set next programm counter for brach execution */
+										  kernel->machine->WriteRegister(NextPCReg, kernel->machine->ReadRegister(PCReg)+4);
+										}
+										return;
+										ASSERTNOTREACHED();
+										break;
+								}
+								case SC_Join:
+								{
+										DEBUG(dbgSys, "Join " << kernel->machine->ReadRegister(4) << "\n");
+										/* Process SysJoin Systemcall*/
+										int result;
+										result = sysJoin((int)kernel->machine->ReadRegister(4));
+										DEBUG(dbgSys, "Join returning with " << result << "\n");
+										/* Prepare Result */
+										kernel->machine->WriteRegister(2, (int)result);
+										/* Modify return point */
+										{
+										  /* set previous programm counter (debugging only)*/
+										  kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
+										  /* set programm counter to next instruction (all Instructions are 4 byte wide)*/
+										  kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(PCReg) + 4);
+										  /* set next programm counter for brach execution */
+										  kernel->machine->WriteRegister(NextPCReg, kernel->machine->ReadRegister(PCReg)+4);
+										}
+										return;
+										ASSERTNOTREACHED();
+										break;
+								}
+								case SC_Create:
+								{
+										char targetName[MAX_FILENAME + 1];
+										int addr = kernel->machine->ReadRegister(4);
+										int tmp;
+										targetName[MAX_FILENAME] = '\0';
+										for (int i = 0; i < MAX_FILENAME; i++)
+										{
+												kernel->machine->ReadMem(addr + i, 1, &tmp);
+												targetName[i] = (char)tmp;
+												if (targetName[i] == '\0')
+												{
+													break;
+												}
+										}
+										DEBUG(dbgSys, "Create " << targetName << "\n");
+										int result = sysCreate(targetName);
+										DEBUG(dbgSys, "Create returning with " << result << "\n");
+										/* Prepare Result */
+										kernel->machine->WriteRegister(2, (int)result);
+										/* Modify return point */
+										{
+										  /* set previous programm counter (debugging only)*/
+										  kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
+										  /* set programm counter to next instruction (all Instructions are 4 byte wide)*/
+										  kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(PCReg) + 4);
+										  /* set next programm counter for brach execution */
+										  kernel->machine->WriteRegister(NextPCReg, kernel->machine->ReadRegister(PCReg)+4);
+										}
+										return;
+										ASSERTNOTREACHED();
+										break;
+								}
+								case SC_Open:
+								{
+										char targetName[MAX_FILENAME + 1];
+										int addr = kernel->machine->ReadRegister(4);
+										int tmp;
+										targetName[MAX_FILENAME] = '\0';
+										for (int i = 0; i < MAX_FILENAME; i++)
+										{
+												kernel->machine->ReadMem(addr + i, 1, &tmp);
+												targetName[i] = (char)tmp;
+												if (targetName[i] == '\0')
+												{
+													break;
+												}							
+										}
+										int mode = kernel->machine->ReadRegister(5);
+										DEBUG(dbgSys, "Open " << targetName << " with mode " << mode << "\n");
+										int result = sysOpen(targetName, mode);
+										DEBUG(dbgSys, "Open returning with " << result << "\n");
+										/* Prepare Result */
+										kernel->machine->WriteRegister(2, (int)result);
+										/* Modify return point */
+										{
+										  /* set previous programm counter (debugging only)*/
+										  kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
+										  /* set programm counter to next instruction (all Instructions are 4 byte wide)*/
+										  kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(PCReg) + 4);
+										  /* set next programm counter for brach execution */
+										  kernel->machine->WriteRegister(NextPCReg, kernel->machine->ReadRegister(PCReg)+4);
+										}
+										return;
+										ASSERTNOTREACHED();
+										break;
+								}
+								case SC_Close:
+								{
+										DEBUG(dbgSys, "Close " << kernel->machine->ReadRegister(4) << "\n");
+										/* Process SysClose Systemcall*/
+										int result;
+										result = sysClose((int)kernel->machine->ReadRegister(4));
+										DEBUG(dbgSys, "Close returning with " << result << "\n");
+										/* Prepare Result */
+										kernel->machine->WriteRegister(2, (int)result);
+										/* Modify return point */
+										{
+										  /* set previous programm counter (debugging only)*/
+										  kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
+										  /* set programm counter to next instruction (all Instructions are 4 byte wide)*/
+										  kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(PCReg) + 4);
+										  /* set next programm counter for brach execution */
+										  kernel->machine->WriteRegister(NextPCReg, kernel->machine->ReadRegister(PCReg)+4);
+										}
+										return;
+										ASSERTNOTREACHED();
+										break;
+								}
+								case SC_Read:
+								{	
+										int addr = kernel->machine->ReadRegister(4);
+										int tmp;
+										int size = kernel->machine->ReadRegister(5);
+										int id = kernel->machine->ReadRegister(6);
+										char *target = (char*)malloc(size);
+										DEBUG(dbgSys, "Read " << id << "\n");
+										int result = sysRead(target, size, id);
+										for (int i = 0; i < result; i++)
+										{
+												tmp = (int)target[i];
+												kernel->machine->WriteMem(addr + i, 1, tmp);
+										}
+										delete target;
+										DEBUG(dbgSys, "Read returning with " << result << "\n");
+										/* Prepare Result */
+										kernel->machine->WriteRegister(2, (int)result);
+										/* Modify return point */
+										{
+										  /* set previous programm counter (debugging only)*/
+										  kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
+										  /* set programm counter to next instruction (all Instructions are 4 byte wide)*/
+										  kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(PCReg) + 4);
+										  /* set next programm counter for brach execution */
+										  kernel->machine->WriteRegister(NextPCReg, kernel->machine->ReadRegister(PCReg)+4);
+										}
+										return;
+										ASSERTNOTREACHED();
+										break;
+								}
+								case SC_Write:
+								{
+										int addr = kernel->machine->ReadRegister(4);
+										int tmp;
+										int size = kernel->machine->ReadRegister(5);
+										int id = kernel->machine->ReadRegister(6);
+										char *target = (char*)malloc(size);
+										DEBUG(dbgSys, "Write " << id << "\n");
+										for (int i = 0; i < size; i++)
+										{
+												kernel->machine->ReadMem(addr + i, 1, &tmp);
+												target[i] = (char)tmp;
+										}
+										int result = sysWrite(target, size, id);
+										delete target;
+										DEBUG(dbgSys, "Write returning with " << result << "\n");
+										/* Prepare Result */
+										kernel->machine->WriteRegister(2, (int)result);
+										/* Modify return point */
+										{
+										  /* set previous programm counter (debugging only)*/
+										  kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
+										  /* set programm counter to next instruction (all Instructions are 4 byte wide)*/
+										  kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(PCReg) + 4);
+										  /* set next programm counter for brach execution */
+										  kernel->machine->WriteRegister(NextPCReg, kernel->machine->ReadRegister(PCReg)+4);
+										}
+										return;
+										ASSERTNOTREACHED();
+										break;
+								}
+								case SC_Delete:
+								{
+										char targetName[MAX_FILENAME + 1];
+										int addr = kernel->machine->ReadRegister(4);
+										int tmp;
+										targetName[MAX_FILENAME] = '\0';
+										for (int i = 0; i < MAX_FILENAME; i++)
+										{
+												kernel->machine->ReadMem(addr + i, 1, &tmp);
+												targetName[i] = (char)tmp;
+												if (targetName[i] == '\0')
+												{
+													break;
+												}							
+										}
+										DEBUG(dbgSys, "Delete " << targetName << "\n");
+										int result = sysDelete(targetName);
+										DEBUG(dbgSys, "Delete returning with " << result << "\n");
 										/* Prepare Result */
 										kernel->machine->WriteRegister(2, (int)result);
 										/* Modify return point */
