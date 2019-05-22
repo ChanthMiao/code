@@ -3,3 +3,5 @@ build.*/nachos
 *noff
 .vscode
 DISK_0
+build.linux/scu.txt
+build.linux/scuTmp.txt
